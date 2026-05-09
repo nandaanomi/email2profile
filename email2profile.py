@@ -24,13 +24,14 @@ except ImportError:
     G = R = Y = C = M = W = X = ''
 
 class Email2Profile:
-    def __init__(self, email, timeout=15, threads=5, output=None):
+    def __init__(self, email, timeout=15, threads=5, output=None, verbose=False):
         self.email = email.lower()
         self.username = email.split('@')[0]
         self.domain = email.split('@')[1]
         self.timeout = timeout
         self.threads = threads
         self.output = output
+        self.verbose = verbose
         self.results = {
             'email': self.email,
             'username': self.username,
@@ -46,13 +47,17 @@ class Email2Profile:
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
     
+    def _log_error(self, platform, error):
+        if self.verbose:
+            print(f"{Y}[DEBUG] {platform} error: {type(error).__name__}: {error}{X}", file=sys.stderr)
+
     def print_banner(self):
         print(f"\n{G}{'='*50}{X}")
         print(f"{G}Email2Profile v3.0 - Low False Positive{X}")
         print(f"{C}Email: {self.email}{X}")
         print(f"{C}Username: {self.username}{X}")
         print(f"{C}Domain: {self.domain}{X}")
-        print(f"{C}Threads: {self.threads} | Timeout: {self.timeout}s{X}")
+        print(f"{C}Threads: {self.threads} | Timeout: {self.timeout}s | Verbose: {'on' if self.verbose else 'off'}{X}")
         print(f"{G}{'='*50}{X}\n")
     
     def verify_github(self):
@@ -83,8 +88,8 @@ class Email2Profile:
                 return {'platform': 'GitHub', 'status': 'not_found'}
             elif resp.status_code == 403:
                 return {'platform': 'GitHub', 'status': 'rate_limited'}
-        except:
-            pass
+        except Exception as e:
+            self._log_error('GitHub', e)
         return {'platform': 'GitHub', 'status': 'not_found'}
     
     def verify_gitlab(self):
@@ -108,7 +113,8 @@ class Email2Profile:
                                 'public_projects': user.get('public_projects')
                             }
                         }
-        except:
+        except Exception as e:
+            self._log_error('GitLab', e)
             pass
         return {'platform': 'GitLab', 'status': 'not_found'}
     
@@ -130,7 +136,8 @@ class Email2Profile:
                             'display_name': data.get('display_name')
                         }
                     }
-        except:
+        except Exception as e:
+            self._log_error('Bitbucket', e)
             pass
         return {'platform': 'Bitbucket', 'status': 'not_found'}
     
@@ -162,7 +169,8 @@ class Email2Profile:
                             return {'platform': 'Reddit', 'status': 'suspended'}
             elif 'banned' in resp.text.lower():
                 return {'platform': 'Reddit', 'status': 'banned'}
-        except:
+        except Exception as e:
+            self._log_error('Reddit', e)
             pass
         return {'platform': 'Reddit', 'status': 'not_found'}
     
@@ -186,7 +194,8 @@ class Email2Profile:
                                 'created': data.get('created')
                             }
                         }
-        except:
+        except Exception as e:
+            self._log_error('HackerNews', e)
             pass
         return {'platform': 'HackerNews', 'status': 'not_found'}
     
@@ -210,7 +219,8 @@ class Email2Profile:
                                 'full_name': user.get('basics', {}).get('full_name')
                             }
                         }
-        except:
+        except Exception as e:
+            self._log_error('Keybase', e)
             pass
         return {'platform': 'Keybase', 'status': 'not_found'}
     
@@ -239,7 +249,8 @@ class Email2Profile:
                         'status': 'confirmed',
                         'url': url
                     }
-        except:
+        except Exception as e:
+            self._log_error('Medium', e)
             pass
         return {'platform': 'Medium', 'status': 'not_found'}
     
@@ -261,7 +272,8 @@ class Email2Profile:
                         'status': 'confirmed',
                         'url': url
                     }
-        except:
+        except Exception as e:
+            self._log_error('Dev.to', e)
             pass
         return {'platform': 'Dev.to', 'status': 'not_found'}
     
@@ -286,7 +298,8 @@ class Email2Profile:
                                     'badges': item.get('badge_counts')
                                 }
                             }
-        except:
+        except Exception as e:
+            self._log_error('StackOverflow', e)
             pass
         return {'platform': 'StackOverflow', 'status': 'not_found'}
     
@@ -306,7 +319,8 @@ class Email2Profile:
                         'profile_url': entry.get('profileUrl')
                     }
                     return True
-        except:
+        except Exception as e:
+            self._log_error('Gravatar', e)
             pass
         return False
     
@@ -326,7 +340,8 @@ class Email2Profile:
                         'data_classes': breach.get('DataClasses', [])[:3]
                     })
                 return True
-        except:
+        except Exception as e:
+            self._log_error('HIBP', e)
             pass
         return False
     
@@ -438,6 +453,7 @@ def main():
     parser.add_argument('-t', '--threads', type=int, default=5, help='Threads (default: 5)')
     parser.add_argument('-to', '--timeout', type=int, default=15, help='Timeout seconds (default: 15)')
     parser.add_argument('-o', '--output', help='Output JSON file')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Show detailed error messages for debugging')
     
     args = parser.parse_args()
     
@@ -449,7 +465,8 @@ def main():
         email=args.email,
         timeout=args.timeout,
         threads=args.threads,
-        output=args.output
+        output=args.output,
+        verbose=args.verbose
     )
     
     try:
