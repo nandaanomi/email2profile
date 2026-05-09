@@ -26,7 +26,7 @@ Timeout configurable untuk koneksi lambat
 
 ## Instalasi
 
-git clone https://github.com/yourusername/email2profile.git
+git clone https://github.com/nandaanomi/email2profile.git
 
 cd email2profile
 
